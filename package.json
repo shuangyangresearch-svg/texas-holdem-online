@@ -1,0 +1,25 @@
+{
+  "name": "texas-holdem-online",
+  "version": "1.1.0",
+  "description": "联网德州扑克 - 网页版真人对战（长牌/短牌、AI 机器人、牌力分析、边池结算）",
+  "main": "server.js",
+  "private": true,
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/audio-engine.test.js && node test/engine.test.js && node test/boundary.test.js && node test/features.test.js && node test/ready.test.js && node test/settle.test.js && node test/fixes.test.js && node test/multiwin.test.js && node test/buyin.test.js && node test/stress.test.js",
+    "test:e2e": "node test/e2e.test.js",
+    "deploy:package": "node scripts/package.js"
+  },
+  "dependencies": {
+    "compression": "^1.8.1",
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  },
+  "devDependencies": {
+    "archiver": "^8.0.0",
+    "socket.io-client": "^4.8.3"
+  }
+}

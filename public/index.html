@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>德州扑克 · 在线对战</title>
+<link rel="stylesheet" href="/style.css?v=20260816">
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ 大厅 ============ -->
+  <div id="lobby" class="screen">
+    <div class="lobby-card">
+      <button id="btn-rank" class="btn small lobby-mute-btn" title="全局排行榜">🏆</button>
+      <button id="btn-mute-lobby" class="btn small lobby-mute-btn" title="音乐与音效设置">🎵</button>
+      <div class="lobby-logo">🃏</div>
+      <h1>德州扑克</h1>
+      <p class="lobby-sub">网页版 · 真人在线对战 · 无需安装</p>
+
+      <!-- 账号面板: 昵称即账号, 积分/等级跨对局与刷新保留 -->
+      <div class="account-bar" id="account-bar">
+        <div class="acc-avatar">🂡</div>
+        <div class="acc-info">
+          <div class="acc-name" id="acc-name">—</div>
+          <div class="acc-meta" id="acc-meta">游客</div>
+        </div>
+        <div class="acc-level" id="acc-level" title="当前段位">
+          <span class="acc-icon">🌱</span>
+          <span class="acc-lvname">新手</span>
+        </div>
+      </div>
+
+      <div class="lobby-tabs">
+        <button class="tab-btn active" data-tab="join">加入房间</button>
+        <button class="tab-btn" data-tab="create">创建房间</button>
+      </div>
+
+      <div class="tab-panel" id="panel-join">
+        <div class="field">
+          <label>你的昵称</label>
+          <div class="name-row">
+            <input id="join-name" type="text" maxlength="12" placeholder="输入昵称" value="">
+            <button id="btn-random-name" class="btn small" title="换一个昵称">换一个</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>房间号</label>
+          <input id="join-code" type="text" maxlength="4" placeholder="如 AB3K" style="text-transform:uppercase;letter-spacing:6px;text-align:center">
+        </div>
+        <button id="btn-join" class="btn primary big">加入房间</button>
+      </div>
+
+      <div class="tab-panel hidden" id="panel-create">
+        <div class="field">
+          <label>你的昵称</label>
+          <div class="name-row">
+            <input id="create-name" type="text" maxlength="12" placeholder="输入昵称" value="">
+            <button id="btn-random-name2" class="btn small" title="换一个昵称">换一个</button>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>小盲</label>
+            <select id="create-sb">
+              <option>10</option><option>20</option><option>50</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>大盲</label>
+            <select id="create-bb">
+              <option selected>20</option><option>40</option><option>100</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>规则</label>
+            <select id="create-rule">
+              <option value="0">长牌 (标准)</option>
+              <option value="1">短牌 (6+)</option>
+            </select>
+          </div>
+        </div>
+        <button id="btn-create" class="btn primary big">创建房间</button>
+      </div>
+
+      <div class="room-list-wrap">
+        <div class="room-list-header">在线房间</div>
+        <div id="room-list" class="room-list">
+          <div class="room-list-empty muted">正在加载房间…</div>
+        </div>
+      </div>
+
+      <div class="lobby-hint">每个玩家初始筹码 1000 · 盲注可按需调整 · 座位自动适应当前人数</div>
+    </div>
+  </div>
+
+  <!-- ============ 房间内 ============ -->
+  <div id="room" class="screen">
+    <div id="spectate-banner" class="hidden">
+      <span>🔭 观战模式 · 仅观看</span>
+      <button id="btn-sit" class="btn small primary">坐下加入</button>
+    </div>
+    <div id="room-header">
+      <div class="room-title">
+        <span id="room-code">房间</span>
+        <span id="room-meta" class="muted"></span>
+      </div>
+      <div class="room-actions">
+        <button id="btn-mute" class="btn small" title="音乐与音效设置">🎵</button>
+        <button id="btn-addbot" class="btn small" title="添加AI机器人">🤖+</button>
+        <button id="btn-copy-link" class="btn small">复制邀请链接</button>
+        <button id="btn-chat" class="btn small" title="聊天">💬<span id="chat-badge" class="hidden">•</span></button>
+        <button id="btn-forfeit" class="btn small danger hidden">放弃</button>
+        <button id="btn-leave" class="btn small danger">离开</button>
+      </div>
+    </div>
+
+    <!-- 买筹码栏（独立一行, 不被 header 挤压） -->
+    <div id="buyin-bar" class="hidden">
+      <span class="buyin-hint"></span>
+      <button id="btn-buyin" class="btn warn">买筹码</button>
+    </div>
+
+    <!-- 操作历史信息框: 房间头下方独立浮条 (移出牌桌, 不再压盖顶部座位) -->
+    <div id="action-history" class="hidden">
+      <div id="ah-bar">
+        <span id="ah-text"></span>
+        <span id="ah-toggle">⌄</span>
+      </div>
+      <div id="ah-list" class="hidden"></div>
+    </div>
+
+    <!-- 牌桌 -->
+    <div id="table-wrap">
+      <div id="table">
+        <div id="top-row">
+          <div id="community"></div>
+          <div id="pot-display"><span id="pot-value">0</span><span class="pot-label">底池</span>
+            <span id="pot-maxwin"></span>
+            <div id="side-pots" class="hidden"></div>
+          </div>
+        </div>
+        <div id="stage-banner"></div>
+        <div id="last-action"></div>
+        <!-- (操作历史信息框已移至房间头下方, 不再放在牌桌内) -->
+
+        <!-- 桌面座位号花纹 (背景装饰层, z-index 最低, 不挡牌) -->
+        <div id="table-seatmarks"></div>
+
+        <!-- 9 个座位 -->
+        <div id="seats"></div>
+
+        <!-- 牌力分析面板 (在牌桌内浮层, 不挡操作条和座位) -->
+        <div id="hand-eval-panel" class="hidden">
+          <button id="he-close" title="关闭牌力分析">✕</button>
+          <div class="he-title">牌力分析</div>
+          <div id="he-handname"></div>
+          <div id="he-tier"></div>
+          <div id="he-multi"></div>
+          <div id="he-grid"></div>
+          <div id="he-rank-list"></div>
+          <div id="he-best5"></div>
+        </div>
+
+        <!-- 中央操作浮层 (准备/开局/确认继续, 点完消失) -->
+        <div id="center-action" class="hidden">
+          <div id="center-action-inner"></div>
+        </div>
+
+        <!-- 操作面板（牌桌内底部浮层, 半透明不遮挡）
+             expanded 常驻: 加注条始终展开(禁用态), 轮到自己直接可加注, 桌子尺寸恒定不跳变 -->
+        <div id="action-bar" class="expanded">
+          <!-- 信息条 (最上, 整行): 阶段/本局结算中/等待提示 等 -->
+          <div id="action-info" class="muted"></div>
+          <!-- 行动倒计时: 轮到自己时显示剩余秒数 (服务端 actionDeadline 驱动) -->
+          <div id="action-buttons">
+            <div id="btn-row">
+              <div id="turn-countdown" class="hidden" title="行动剩余时间">
+                <svg viewBox="0 0 36 36" class="tc-ring">
+                  <circle class="tc-ring-bg" cx="18" cy="18" r="15.5"/>
+                  <circle class="tc-ring-fg" cx="18" cy="18" r="15.5"/>
+                </svg>
+                <span id="turn-countdown-num">45</span>
+              </div>
+              <button id="btn-hand-eval" class="btn small icon-btn hidden" title="查看牌力">♠</button>
+              <button id="btn-fold" class="btn danger"><span class="btn-icon">✕</span><span class="btn-text">弃牌</span></button>
+              <button id="btn-bet" class="btn primary hidden"><span class="btn-icon">=</span><span class="btn-text">跟注</span></button>
+            </div>
+            <div id="bet-slider-wrap" class="hidden">
+              <div id="bet-slider-top">
+                <span id="bet-range-hint" class="muted"></span>
+                <span id="bet-amount">0</span>
+              </div>
+              <input type="range" id="bet-slider" min="0" max="100" value="0">
+              <div id="bet-slider-labels">
+                <span id="bet-min-label"></span>
+                <span id="bet-max-label"></span>
+              </div>
+              <div id="bet-input-row">
+                <button type="button" id="bet-step-down" class="btn bet-step" title="-10">−</button>
+                <input type="number" id="bet-input" min="0" value="0" inputmode="numeric" step="10">
+                <button type="button" id="bet-step-up" class="btn bet-step" title="+10">+</button>
+              </div>
+              <div id="bet-quick-row" class="hidden">
+                <button class="btn bet-quick" data-fixed="200" title="下注 200">200</button>
+                <button class="btn bet-quick" data-fixed="500" title="下注 500">500</button>
+                <button class="btn bet-quick" data-fixed="1000" title="下注 1000">1000</button>
+                <button class="btn bet-quick allin" data-fixed="-1" title="全下">全下</button>
+              </div>
+            </div>
+            <!-- 状态切换按钮 (准备/确认继续/开局) 已移至牌桌中央 center-action -->
+            <button id="btn-state-action" class="btn primary big hidden" style="display:none">准备</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 聊天面板 (房间内浮层) -->
+    <div id="chat-panel" class="hidden">
+      <div id="chat-list"></div>
+      <!-- 快捷表情: 点击即发送 -->
+      <div id="chat-emoji-row">
+        <button class="chat-emoji" data-text="😂">😂</button>
+        <button class="chat-emoji" data-text="👍">👍</button>
+        <button class="chat-emoji" data-text="👏">👏</button>
+        <button class="chat-emoji" data-text="🍀">🍀</button>
+        <button class="chat-emoji" data-text="😱">😱</button>
+        <button class="chat-emoji" data-text="🤫">🤫</button>
+        <button class="chat-emoji" data-text="🐂">🐂</button>
+        <button class="chat-emoji" data-text="😤">😤</button>
+        <button class="chat-emoji" data-text="🎉">🎉</button>
+        <button class="chat-emoji" data-text="💪">💪</button>
+      </div>
+      <form id="chat-form">
+        <input id="chat-input" type="text" maxlength="200" placeholder="说点什么…" autocomplete="off">
+        <button class="btn small" type="submit">发送</button>
+      </form>
+    </div>
+
+  </div>
+
+  <!-- 音乐设置面板 (大厅/房间通用浮层) -->
+  <div id="music-panel" class="hidden">
+    <div class="mp-title">🎵 音乐设置</div>
+    <div class="mp-row">
+      <span class="mp-label">背景音乐</span>
+      <button id="mp-bgm-toggle" class="btn small">开</button>
+    </div>
+    <div class="mp-row">
+      <span class="mp-label">音乐风格</span>
+      <div class="mp-styles">
+        <button class="btn small mp-style" data-style="song">🎵 歌曲</button>
+        <button class="btn small mp-style" data-style="piano">钢琴</button>
+        <button class="btn small mp-style" data-style="jazz">爵士</button>
+        <button class="btn small mp-style" data-style="electro">电子</button>
+      </div>
+    </div>
+    <!-- 歌曲播放器: 有 mp3 时显示 (切歌 + 进度条) -->
+    <div id="mp-song-player" class="hidden">
+      <div class="mp-row">
+        <span class="mp-label">正在播放</span>
+        <span id="mp-now-playing" class="mp-now-playing">—</span>
+      </div>
+      <div class="mp-row">
+        <button id="mp-prev" class="btn small" title="上一首">⏮</button>
+        <input type="range" id="mp-song-progress" min="0" max="1000" value="0">
+        <button id="mp-next" class="btn small" title="下一首">⏭</button>
+      </div>
+      <div class="mp-row">
+        <span id="mp-song-time" class="mp-time">0:00 / 0:00</span>
+      </div>
+    </div>
+    <div class="mp-row">
+      <span class="mp-label">音量</span>
+      <input type="range" id="mp-bgm-volume" min="0" max="100" value="16">
+    </div>
+    <div class="mp-row">
+      <span class="mp-label">音效</span>
+      <button id="mp-sfx-toggle" class="btn small">开</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============ 登录 / 注册 ============ -->
+<div id="auth-screen" class="hidden" style="position:fixed;inset:0;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow-y:auto;min-height:100vh;padding:24px 20px;box-sizing:border-box;background:radial-gradient(1200px 600px at 50% -10%,rgba(255,224,138,0.12),transparent 60%),linear-gradient(160deg,#0c2616 0%,#14361f 45%,#0c1f14 100%);">
+  <div class="auth-card" style="width:min(380px,92vw);max-height:calc(100dvh - 32px);overflow-y:auto;margin:0;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:18px;padding:26px 26px 22px;box-shadow:0 18px 50px rgba(0,0,0,0.45);text-align:center;">
+    <div class="lobby-logo">🃏</div>
+    <h1>德州扑克</h1>
+    <p class="lobby-sub">网页版 · 真人在线对战</p>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-auth="login">登录</button>
+      <button class="auth-tab" data-auth="register">注册</button>
+    </div>
+
+    <!-- 登录表单 -->
+    <form id="form-login" class="auth-form" autocomplete="on">
+      <div class="field">
+        <label>用户名</label>
+        <input id="login-username" type="text" maxlength="16" placeholder="登录用户名" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>密码</label>
+        <input id="login-password" type="password" maxlength="40" placeholder="密码" autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn primary big">登录</button>
+    </form>
+
+    <!-- 注册表单 -->
+    <form id="form-register" class="auth-form hidden" autocomplete="on">
+      <div class="field">
+        <label>用户名</label>
+        <input id="reg-username" type="text" maxlength="16" placeholder="3-16 位，中文/字母/数字/下划线" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>昵称</label>
+        <input id="reg-nickname" type="text" maxlength="12" placeholder="对局中显示的昵称">
+      </div>
+      <div class="field">
+        <label>密码</label>
+        <input id="reg-password" type="password" maxlength="40" placeholder="至少 6 位" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label>确认密码</label>
+        <input id="reg-password2" type="password" maxlength="40" placeholder="再次输入密码" autocomplete="new-password">
+      </div>
+      <button type="submit" class="btn primary big">注册并登录</button>
+    </form>
+
+    <button id="btn-guest" class="btn ghost small">先随便玩玩（游客）</button>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<!-- ============ 全局排行榜面板 ============ -->
+<div id="rank-panel" class="hidden">
+  <div class="rank-card">
+    <div class="rank-header">🏆 全局排行榜 <span id="rank-total" class="muted"></span></div>
+    <div id="rank-list" class="rank-list"><div class="rank-loading muted">加载中…</div></div>
+    <button id="rank-close" class="btn primary big">关闭</button>
+  </div>
+</div>
+
+<div id="stage-overlay" class="hidden"><span id="stage-overlay-text"></span></div>
+<div id="turn-alert" class="hidden"></div>
+
+<!-- 竖屏旋转提示 -->
+<div id="rotate-hint" class="hidden">
+  <div class="rh-icon">📱</div>
+  <div class="rh-title">建议横屏游玩</div>
+  <div class="rh-desc">横屏体验更接近电脑端，牌桌更大、操作更顺手</div>
+  <button class="rh-close" id="rh-close-btn">知道了</button>
+</div>
+
+<!-- 结算面板 -->
+<div id="showdown-panel" class="hidden">
+  <div class="sd-header">本局结算 <span class="sd-hint">灰牌为公共牌 · 实牌为玩家手牌</span></div>
+  <div id="sd-winner-banner" class="hidden"></div>
+  <div id="sd-community"></div>
+  <div id="sd-list"></div>
+  <button id="sd-close" class="btn primary">确定</button>
+</div>
+
+<div id="result-banner" class="hidden"></div>
+
+<!-- SVG sprite sheet: 4 个花色 symbol, 牌面通过 <use href="#id"> 引用
+     viewBox 100x100~110; 颜色由 CSS currentColor 控制 -->
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+  <defs>
+    <!-- 黑桃 ♠: 圆滑心形 + 短茎 -->
+    <symbol id="suit-spade" viewBox="0 0 100 110">
+      <path d="M50 18 C44 8, 28 8, 24 22 C20 36, 28 52, 50 78 C72 52, 80 36, 76 22 C72 8, 56 8, 50 18 Z M44 76 L40 96 L60 96 L56 76 Z" />
+    </symbol>
+    <!-- 红心 ♥: 两个圆弧 + 尖端 -->
+    <symbol id="suit-heart" viewBox="0 0 100 100">
+      <path d="M50 86 C18 64, 8 42, 8 28 C8 16, 18 8, 30 8 C40 8, 47 14, 50 22 C53 14, 60 8, 70 8 C82 8, 92 16, 92 28 C92 42, 82 64, 50 86 Z" />
+    </symbol>
+    <!-- 方块 ♦: 圆角菱形 -->
+    <symbol id="suit-diamond" viewBox="0 0 100 100">
+      <path d="M50 6 C56 14, 88 46, 94 50 C88 54, 56 86, 50 94 C44 86, 12 54, 6 50 C12 46, 44 14, 50 6 Z" />
+    </symbol>
+    <!-- 梅花 ♣: 三圆 + 茎 -->
+    <symbol id="suit-club" viewBox="0 0 100 110">
+      <circle cx="50" cy="28" r="18" />
+      <circle cx="32" cy="52" r="18" />
+      <circle cx="68" cy="52" r="18" />
+      <path d="M44 68 L40 96 L60 96 L56 68 Z" />
+    </symbol>
+  </defs>
+</svg>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/audio-engine.js"></script>
+<script src="/game.js"></script>
+</body>
+</html>

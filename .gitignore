@@ -1,0 +1,29 @@
+node_modules/
+data/
+
+# 无关工具目录 (音乐解锁, 非游戏项目)
+unlock-tool/
+
+# 浏览器调试数据目录
+.cdbg/
+.cdbg2/
+.cdbg3/
+
+# 日志与临时文件
+*.log
+*.err
+.DS_Store
+
+# 运行期文本产物
+chat_out.txt
+chat_err.txt
+dup_out.txt
+nodetest.txt
+test/dbg-out.txt
+probe-out.txt
+probe-err.txt
+sd-dom.txt
+
+# 备份/版本产物
+versions/
+backups/
